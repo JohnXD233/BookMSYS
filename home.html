@@ -1,0 +1,643 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Home</title>
+    <link rel="stylesheet" type="text/css" href="themes/default/easyui.css">
+    <link rel="stylesheet" type="text/css" href="themes/icon.css">
+    <link rel="stylesheet" type="text/css" href="themes/demo.css">
+    <script src="js/jquery-1.8.0.min.js"></script>
+    <script src="js/jquery.easyui.min.js"></script>
+</head>
+<body>
+
+<div class="easyui-tabs" style="width:750px;height:500px">
+    <div title="Book" style="padding:10px;width:700px;height:450px;">
+        <table id="dg" class="easyui-datagrid" title="数据表分页展示easyUI" style="width:700px;height:350px"
+               data-options="pageList:[1,2,3,4,5],pageSize:1,rownumbers:true,singleSelect:true,pagination:true,url:'BookServlet',toolbar:'#tb'">
+            <thead>
+            <tr>
+                <th data-options="field:'bid',width:100,formatter:operation">图书ID</th>
+                <th data-options="field:'bookname',width:100">书名</th>
+                <th data-options="field:'bookprice',width:80,align:'right'">价格</th>
+                <th data-options="field:'bookpath',formatter:function(v){return '<img width=80 height=80 src='+v+'>'}">书籍封面</th>
+                <th data-options="field:'leftsum',width:80">库存量</th>
+                <th data-options="field:'describe',width:80">描述</th>
+                <!--这边发现field使用相同字段会完全原本显示-->
+                <!--<th data-options="field:'id',formatter:function(v,row){return '<a href='+row.id+'>借书</a>'}">操作</th>-->
+            </tr>
+            </thead>
+        </table>
+    </div>
+    <div title="Person" style="padding:10px;width:700px;height:450px;">
+        <table id="dg2" class="easyui-datagrid" title="人员信息表" style="width:700px;height:350px"
+               data-options="pageList:[1,2,3,4,5],pageSize:1,rownumbers:true,singleSelect:true,pagination:true,url:'StudentServlet',toolbar:'#tb2'">
+            <thead>
+            <tr>
+                <th data-options="field:'sid',width:80">学生ID</th>
+                <th data-options="field:'name',width:100">姓名</th>
+                <th data-options="field:'password',width:80,align:'right'">密码</th>
+                <th data-options="field:'booksum',width:80">借书总数</th>
+                <th data-options="field:'root',width:80">权限</th>
+            </tr>
+            </thead>
+        </table>
+    </div>
+    <div title="Upload" data-options="iconCls:'icon-help'" style="padding:10px">
+        <!--Excel文件上传，并且入库，导入Excel-->
+        <div class="easyui-panel" title="Upload Excel File" style="width:400px;padding:30px 70px 50px 70px">
+            <form id="upload_form" enctype="multipart/form-data" method="post" action="FileUploadServlet">
+                <div style="margin-bottom:20px">
+                    <div>Book Name:</div>
+                    <input class="easyui-textbox" name="bookname" id="bookname2" data-options="required:true" type="text">
+                </div>
+                <div style="margin-bottom:20px">
+                    <div>Book Price:</div>
+                    <input class="easyui-textbox" name="bookprice" id="bookprice2" data-options="required:true" type="text">
+                </div>
+                <div style="margin-bottom:20px">
+                    <div>Book Sum:</div>
+                    <input class="easyui-textbox" name="leftsum" id="leftsum2" data-options="required:true" type="text">
+                </div>
+                <div style="margin-bottom:20px">
+                    <div>Common File(BookPath):</div>
+                    <input  name="file1"  style="width:100%" type="file">
+                </div>
+                <div style="margin-bottom:20px">
+                    <div>Book Description:</div>
+                    <input class="easyui-textbox" name="describe" id="describe2" data-options="multiline:true" style="height:60px" type="text">
+                </div>
+                <br><br>
+                <div style="margin-bottom:20px">
+                    <div>Excel File(如果导入Excel数据源只要导这个即可):</div>
+                    <input  name="file2"  style="width:100%" type="file">
+                </div>
+                <div>
+                    <a class="easyui-linkbutton"  onclick="upload()">Upload</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+
+<!--为下面的表格datagrid添加超链接-->
+<script type="text/javascript">
+    function operation(value, row)
+    {
+        return "<input type='checkbox' value='"+value+"' id='"+value+"' name='books'> &nbsp;"+value+"&nbsp;<a href='BookServlet?oper=rentbook&bid=" + value + "' target='_blank'>借书</a>&nbsp;<a href='BookServlet?oper=returnbook&bid=" + value + "' target='_blank'>还书</a>";
+    }
+
+    //把借书还书改成ajax
+    function rentBook(bid) {
+        $.ajax({
+            url:"BookServlet?oper=rentbook",
+            data:{bid:bid},
+            dataType:"text",
+            success:function (data) {
+                if(data=="ok"){
+                    $.messager.alert("提示","借书成功");
+                }
+            },
+            error:function () {
+                $.messager.alert("提示","借书失败");
+            }
+        })
+    }
+    function returnBook(bid) {
+        $.ajax({
+            url:"BookServlet?oper=returnbook",
+            data:{bid:bid},
+            dataType:"text",
+            success:function (data) {
+                if(data=="ok"){
+                    $.messager.alert("提示","还书成功");
+                }
+            },
+            error:function () {
+                $.messager.alert("提示","还书失败");
+            }
+        })
+    }
+
+    function returnBooks() {
+        //一键还书
+        var selectedBooks=document.getElementsByName("books");
+        var books="";
+        for(var i=0;i<selectedBooks.length;i++){
+            if(selectedBooks[i].checked){
+                //alert(selectedBooks[i].value)
+                books+=selectedBooks[i].value+";";
+            }
+        }
+        //alert(books)
+        $.ajax({
+            url:"BookServlet",
+            type:"POST",
+            data:{books:books,oper:"returnManyBooks"},
+            dataType:"text",
+            success:function (data) {
+                if(data=="ok"){
+                    $.messager.alert("提示","一键还书成功");
+                    $('#dg').datagrid("reload");
+                    $('#dg').datagrid("clearSelections");
+
+                }
+            },
+            error:function () {
+                $.messager.alert("提示","网络出错")
+            }
+        })
+    }
+</script>
+
+<!-- 修改书本信息的模态窗口-->
+<div id="updateDiv" style="display:none;line-height: 50px;vertical-align: middle;">
+    <form method="post" action="BookServlet?oper=altBook">
+        <table align="center">
+            <tr>
+                <td>图书id</td>
+                <td>
+                    <input name="bid" id="bid" type="text">
+                </td>
+            </tr>
+            <tr>
+                <td>书名</td>
+                <td>
+                    <input name="bookname" id="bookname" type="text">
+                </td>
+            </tr>
+            <tr>
+                <td>价格</td>
+                <td>
+                    <input name="bookprice" id="bookprice" type="text">
+                </td>
+            </tr>
+            <tr>
+                <td>图片路径</td>
+                <td>
+                    <input name="bookpath" id="bookpath" type="text">
+                </td>
+            </tr>
+            <tr>
+                <td>库存量</td>
+                <td>
+                    <input name="leftsum" id="leftsum" type="text">
+                </td>
+            </tr>
+            <tr>
+                <td>描述</td>
+                <td>
+                    <input name="describe" id="describe" type="text">
+                </td>
+            </tr>
+        </table>
+    </form>
+</div>
+<!-- 新增书本信息的模态窗口-->
+<div id="addBookDiv" style="display:none;line-height: 50px;vertical-align: middle;">
+    <form method="post" action="BookServlet?oper=addBook" enctype="multipart/form-data">
+        <table align="center">
+            <tr>
+                <td>书名</td>
+                <td>
+                    <input name="bookname3" id="bookname3" type="text">
+                </td>
+            </tr>
+            <tr>
+                <td>价格</td>
+                <td>
+                    <input name="bookprice3" id="bookprice3" type="text">
+                </td>
+            </tr>
+            <tr>
+                <td>图片路径</td>
+                <td>
+                    <input name="bookpath3" id="bookpath3" type="file">
+                </td>
+            </tr>
+            <tr>
+                <td>库存量</td>
+                <td>
+                    <input name="leftsum3" id="leftsum3" type="text">
+                </td>
+            </tr>
+            <tr>
+                <td>描述</td>
+                <td>
+                    <input name="describe3" id="describe3" type="text">
+                </td>
+            </tr>
+        </table>
+    </form>
+</div>
+<!--工具栏部分-->
+<div id="tb" style="padding:5px;height:auto">
+    <div>
+        Key:
+        <select class="easyui-combobox" panelHeight="auto" style="width:100px" id="key">
+            <option value="">请选择</option>
+            <option value="地">地</option>
+            <option value="未">未</option>
+            <option value="日">日</option>
+            <option value="史">史</option>
+            <option value="忧">忧</option>
+        </select>
+        <a class="easyui-linkbutton" iconCls="icon-search" id="search">Search</a>
+        <input type="button" id="return_btn" value="一键还书" onclick="returnBooks()">
+    </div>
+</div>
+<div id="tb2" style="padding:5px;height:auto">
+    <div>
+        Key:
+        <select class="easyui-combobox" panelHeight="auto" style="width:100px" id="key2">
+            <option value="">请选择</option>
+            <option value="a">a</option>
+            <option value="b">b</option>
+            <option value="c">c</option>
+            <option value="d">d</option>
+            <option value="e">e</option>
+        </select>
+        <a class="easyui-linkbutton" iconCls="icon-search" id="search2">Search</a>
+    </div>
+</div>
+
+<!-- 修改学生信息的模态窗口-->
+<div id="updateDiv2" style="display:none;line-height: 50px;vertical-align: middle;">
+    <form method="post" action="StudentServlet?oper=altStudent">
+        <table align="center">
+            <tr>
+                <td>学生id</td>
+                <td>
+                    <input name="sid" id="sid" type="text">
+                </td>
+            </tr>
+            <tr>
+                <td>姓名</td>
+                <td>
+                    <input name="name" id="name" type="text">
+                </td>
+            </tr>
+            <tr>
+                <td>密码</td>
+                <td>
+                    <input name="password" id="password" type="text">
+                </td>
+            </tr>
+            <tr>
+                <td>借书总数</td>
+                <td>
+                    <input name="booksum" id="booksum" type="text">
+                </td>
+            </tr>
+            <tr>
+                <td>权限</td>
+                <td>
+                    <input name="root" id="root" type="text">
+                </td>
+            </tr>
+        </table>
+    </form>
+</div>
+
+<!-- 新增学生信息的模态窗口-->
+<div id="addStudentDiv" style="display:none;line-height: 50px;vertical-align: middle;">
+    <form method="post" action="StudentServlet?oper=addStudent">
+        <table align="center">
+            <tr>
+                <td>姓名</td>
+                <td>
+                    <input name="name2" id="name2" type="text">
+                </td>
+            </tr>
+            <tr>
+                <td>密码</td>
+                <td>
+                    <input name="password2" id="password2" type="text">
+                </td>
+            </tr>
+            <tr>
+                <td>借书总数</td>
+                <td>
+                    <input name="booksum2" id="booksum2" type="text">
+                </td>
+            </tr>
+            <tr>
+                <td>权限</td>
+                <td>
+                    <input name="root2" id="root2" type="text">
+                </td>
+            </tr>
+        </table>
+    </form>
+</div>
+
+<script type="text/javascript">
+    function upload() {
+        $.messager.confirm("提示", "Are you sure?",function (r) {
+            if (r) {
+                $("#upload_form").submit();
+            }
+        })
+    }
+</script>
+
+<!-- 表格数据操作ajax+easyUI+分页+数据更新-->
+<script type="text/javascript">
+    $(function(){
+        function search() {
+            //注意 easyUI获取 下拉框值 不是$("#key option:selected").val()，而是 $("#key").combobox('getValue')
+            //alert($("#key").combobox('getValue'))
+            $.ajax({
+                url:"BookServlet",
+                data:{key:$("#key").combobox('getValue'),page:1,rows:1},
+                dataType:"json",
+                success:function (data) {
+                    $('#dg').datagrid("reload");
+                    $('#dg').datagrid("clearSelections");
+                },
+                error:function () {
+                    $.messager.alert("提示","数据初始化失败")
+                }
+            })
+        }
+        function search2() {
+            //alert($("#key2").combobox('getValue'));
+            $.ajax({
+                url:"StudentServlet",
+                data:{key:$("#key2").combobox('getValue'),page:1,rows:1},
+                dataType:"json",
+                success:function (data) {
+                    $('#dg2').datagrid("load");
+                    $('#dg2').datagrid("clearSelections");
+                },
+                error:function () {
+                    $.messager.alert("提示","数据初始化失败")
+                }
+            })
+        }
+
+        //页面加载时就进行的操作,事件绑定
+        $("#search").click(function () {
+            search();
+        })
+        $("#search2").click(function () {
+            search2();
+        })
+        var pager = $('#dg').datagrid('getPager');	// get the pager of datagrid
+        pager.pagination({
+            buttons:[{
+                iconCls:'icon-search',
+                handler:function(){
+                    alert('search');
+                    search();
+                }
+            },{
+                iconCls:'icon-add',
+                handler:function(){
+                    $("#addBookDiv").css("display", "block");
+                    $("#addBookDiv").dialog({
+                        width: 400,
+                        height: 300,
+                        modal: true,//表示以独占模式打开窗体
+                        title: "新增图书信息",
+                        collapsible: true,
+                        minimizable: true,
+                        maximizable: true,
+                        resizable: true,
+                        buttons: [{
+                            id: 'btnAdd',
+                            text: '保存修改',
+                            iconCls: 'icon-add',
+                            handler: function () {
+                                //让表单提交
+                                $("#addBookDiv form").submit();//可以改为ajax
+                                $('#dg').datagrid("reload");//这边在服务端
+                                $('#dg').datagrid("clearSelections");
+                                $("#addBookDiv").dialog("close");
+                                $.messager.alert("添加提示:", "新增图书成功!");
+                            }
+                        }, {
+                            id: 'btnCancelAdd',
+                            text: '取消',
+                            iconCls: 'icon-cancel',
+                            handler: function () {
+                                $("#addBookDiv").dialog("close");
+                            }
+                        }]
+
+                    });
+                }
+            },{
+                iconCls:'icon-edit',
+                handler:function(){
+                    //alert("打开修改");//修改
+                    var row = $('#dg').datagrid('getSelected');//获取当前被选中行数
+                    //把信息布置到模态窗,row是json串
+                    $("#bid").val(row.bid);
+                    $("#bookname").val(row.bookname);
+                    $("#bookprice").val(row.bookprice);
+                    $("#bookpath").val(row.bookpath);
+                    $("#leftsum").val(row.leftsum);
+                    $("#describe").val(row.describe);
+                    //打开修改提示框
+                    $("#updateDiv").css("display", "block");
+                    //弹出提示框
+                    $("#updateDiv").dialog({
+                        width: 400,
+                        height: 300,
+                        modal: true,//表示以独占模式打开窗体
+                        title: "添加图书信息",
+                        collapsible: true,
+                        minimizable: true,
+                        maximizable: true,
+                        resizable: true,
+                        buttons: [{
+                            id: 'btnAdd',
+                            text: '保存修改',
+                            iconCls: 'icon-add',
+                            handler: function () {
+                                //让表单提交
+                                $("#updateDiv form").submit();//可以改为ajax
+                                $('#dg').datagrid("reload");//这边在服务端
+                                $('#dg').datagrid("clearSelections");
+                                $("#updateDiv").dialog("close");
+                                $.messager.alert("添加提示:", "修改成功!");
+                            }
+                        }, {
+                            id: 'btnCancelAdd',
+                            text: '取消',
+                            iconCls: 'icon-cancel',
+                            handler: function () {
+                                $("#updateDiv").dialog("close");
+                            }
+                        }]
+
+                    });
+                }
+            },{iconCls:'icon-remove',
+                handler:function(){
+                    var row = $('#dg').datagrid('getSelected');//获取当前被选中行数
+                    //var rows = $('#dg').datagrid('getSelections');//获取选中多行，要设置singleSelect:false
+                    //$.messager.alert("选中多条提示:", rows.length);//easyUI的提示框
+                    if(row==null){
+                        $.messager.alert("提示","请至少选中一条记录");
+                        return;
+                    }
+
+                    $.messager.confirm("确认消息", "您确定要删除信息吗？", function (r) {
+                        if(r){
+                            $.post("BookServlet", {bid:row.bid,oper:"delBook" }, function (data)
+                            {
+                                if (data == "ok") //服务端返回的数据
+                                {
+                                    //刷新表格，去掉选中状态的 那些行。
+                                    $('#dg').datagrid("reload");//重新异步加载表格数据
+                                    $('#dg').datagrid("clearSelections");//刷新纪录
+                                    $.messager.alert("删除提示:", "删除成功!");//弹出提示
+                                }
+                                else
+                                {
+                                    $.messager.alert("删除提示:","删除失败!");
+                                }
+                            });
+                        }
+                        else{
+                            $.messager.alert("提示:","删除已取消");
+                        }
+                    });
+
+                }
+            }]
+        });
+
+        //操作学生信息
+        var pager2 = $('#dg2').datagrid('getPager');	// get the pager of datagrid
+        pager2.pagination({
+            buttons:[{
+                iconCls:'icon-search',
+                handler:function(){
+                    alert('search');
+                    search();
+                }
+            },{
+                iconCls:'icon-add',
+                handler:function(){
+                    $("#addStudentDiv").css("display", "block");
+                    $("#addStudentDiv").dialog({
+                        width: 400,
+                        height: 300,
+                        modal: true,//表示以独占模式打开窗体
+                        title: "新增用户信息",
+                        collapsible: true,
+                        minimizable: true,
+                        maximizable: true,
+                        resizable: true,
+                        buttons: [{
+                            id: 'btnAdd',
+                            text: '保存修改',
+                            iconCls: 'icon-add',
+                            handler: function () {
+                                //让表单提交
+                                $("#addStudentDiv form").submit();//可以改为ajax
+                                $('#dg2').datagrid("reload");//这边在服务端
+                                $('#dg2').datagrid("clearSelections");
+                                $("#addStudentDiv").dialog("close");
+                                $.messager.alert("提示:", "新增用户成功!");
+                            }
+                        }, {
+                            id: 'btnCancelAdd',
+                            text: '取消',
+                            iconCls: 'icon-cancel',
+                            handler: function () {
+                                $("#addStudentDiv").dialog("close");
+                            }
+                        }]
+
+                    });
+                }
+            },{
+                iconCls:'icon-edit',
+                handler:function(){
+                    //alert("打开修改");//修改
+                    var row = $('#dg2').datagrid('getSelected');//获取当前被选中行数
+                    //把信息布置到模态窗,row是json串
+                    $("#sid").val(row.sid);
+                    $("#name").val(row.name);
+                    $("#password").val(row.password);
+                    $("#booksum").val(row.booksum);
+                    $("#root").val(row.root);
+                    //打开修改提示框
+                    $("#updateDiv2").css("display", "block");
+                    //弹出提示框
+                    $("#updateDiv2").dialog({
+                        width: 400,
+                        height: 300,
+                        modal: true,//表示以独占模式打开窗体
+                        title: "添加学生信息",
+                        collapsible: true,
+                        minimizable: true,
+                        maximizable: true,
+                        resizable: true,
+                        buttons: [{
+                            id: 'btnAdd',
+                            text: '保存修改',
+                            iconCls: 'icon-add',
+                            handler: function () {
+                                //让表单提交
+                                $("#updateDiv2 form").submit();//可以改为ajax
+                                $('#dg').datagrid("reload");//这边在服务端
+                                $('#dg').datagrid("clearSelections");
+                                $("#updateDiv2").dialog("close");
+                                $.messager.alert("添加提示:", "修改成功!");
+                            }
+                        }, {
+                            id: 'btnCancelAdd',
+                            text: '取消',
+                            iconCls: 'icon-cancel',
+                            handler: function () {
+                                $("#updateDiv2").dialog("close");
+                            }
+                        }]
+
+                    });
+                }
+            },{iconCls:'icon-remove',
+                handler:function(){
+                    var row = $('#dg2').datagrid('getSelected');//获取当前被选中行数
+                    //var rows = $('#dg').datagrid('getSelections');//获取选中多行，要设置singleSelect:false
+                    //$.messager.alert("选中多条提示:", rows.length);//easyUI的提示框
+                    if(row==null){
+                        $.messager.alert("提示","请至少选中一条记录");
+                        return;
+                    }
+
+                    $.messager.confirm("确认消息", "您确定要删除信息吗？", function (r) {
+                        if(r){
+                            $.post("StudentServlet", {sid:row.sid,oper:"delStudent" }, function (data)
+                            {
+                                if (data == "ok") //服务端返回的数据
+                                {
+                                    //刷新表格，去掉选中状态的 那些行。
+                                    $('#dg2').datagrid("reload");//重新异步加载表格数据
+                                    $('#dg2').datagrid("clearSelections");//刷新纪录
+                                    $.messager.alert("删除提示:", "删除成功!");//弹出提示
+                                }
+                                else
+                                {
+                                    $.messager.alert("删除提示:","删除失败!");
+                                }
+                            });
+                        }
+                        else{
+                            $.messager.alert("提示:","删除已取消");
+                        }
+                    });
+
+                }
+            }]
+        });
+    })
+</script>
+</body>
+</html>
